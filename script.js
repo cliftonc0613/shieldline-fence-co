@@ -1,6 +1,6 @@
 /**
  * Shieldline Fence Co. - Interactive Scripts
- * Handles navigation, scrolling, animations, and form interactions
+ * Vanilla JavaScript for navigation, animations, and forms
  */
 
 (function() {
@@ -21,7 +21,7 @@
             currentYearSpan.textContent = new Date().getFullYear();
         }
         
-        // Setup event listeners
+        // Setup event listeners and features
         setupNavbar();
         setupMobileMenu();
         setupSmoothScrolling();
@@ -31,7 +31,7 @@
         // Run initial check
         handleNavbarScroll();
         
-        console.log('Shieldline Fence Co. site initialized');
+        console.log('Shieldline Fence Co. site initialized successfully');
     }
     
     // === NAVBAR SCROLL EFFECT ===
@@ -116,35 +116,32 @@
                         
                         // Close mobile menu if open
                         closeMobileMenu();
-                        
-                        // Update active link
-                        updateActiveLink(href);
                     }
                 }
             });
         });
     }
     
-    function updateActiveLink(href) {
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === href) {
-                link.classList.add('active');
-            }
-        });
-    }
-    
-    // === SCROLL ANIMATIONS ===
+    // === SCROLL ANIMATIONS (Intersection Observer) ===
     function setupScrollAnimations() {
         const observerOptions = {
-            threshold: 0.1,
+            threshold: 0.15,
             rootMargin: '0px 0px -50px 0px'
         };
         
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
+            entries.forEach((entry, index) => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-in');
+                    // Add staggered delay for grid items
+                    const delay = entry.target.classList.contains('service-card') ||
+                                  entry.target.classList.contains('testimonial-card')
+                        ? Array.from(entry.target.parentNode.children).indexOf(entry.target) * 100
+                        : 0;
+                    
+                    setTimeout(() => {
+                        entry.target.classList.add('animate-in');
+                    }, delay);
+                    
                     observer.unobserve(entry.target);
                 }
             });
@@ -157,20 +154,8 @@
         
         animatedElements.forEach(el => {
             el.style.opacity = '0';
-            el.style.transform = 'translateY(30px)';
-            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
             observer.observe(el);
         });
-        
-        // Add animation class styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .animate-in {
-                opacity: 1 !important;
-                transform: translateY(0) !important;
-            }
-        `;
-        document.head.appendChild(style);
     }
     
     // === CONTACT FORM HANDLER ===
@@ -190,9 +175,9 @@
                 return;
             }
             
-            // Validate phone format
-            const phoneRegex = /^[\d\s\-\(\)]+$/;
-            if (!phoneRegex.test(data.phone)) {
+            // Validate phone format (basic check for digits)
+            const phoneClean = data.phone.replace(/\D/g, '');
+            if (phoneClean.length < 10) {
                 showFormMessage('Please enter a valid phone number.', 'error');
                 return;
             }
@@ -201,8 +186,7 @@
             showFormMessage('Thank you! We\'ll contact you within 24 hours.', 'success');
             contactForm.reset();
             
-            // In production, you would send this to your backend or email service
-            // Example: sendToServer(data);
+            // In production, send to backend/email service
             console.log('Form submitted:', data);
         });
     }
@@ -218,25 +202,36 @@
         const messageEl = document.createElement('div');
         messageEl.className = 'form-message';
         messageEl.textContent = message;
+        
+        const successStyles = `
+            background: linear-gradient(135deg, #D4A056 0%, #E8C482 100%);
+            color: #3D3228;
+            border: none;
+        `;
+        
+        const errorStyles = `
+            background: #FEE;
+            color: #C33;
+            border: 1px solid #FCC;
+        `;
+        
         messageEl.style.cssText = `
-            padding: 14px 20px;
+            padding: 16px 24px;
             border-radius: 8px;
             margin-bottom: 20px;
             font-weight: 500;
             text-align: center;
-            ${type === 'success' 
-                ? 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;' 
-                : 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;'
-            }
+            ${type === 'success' ? successStyles : errorStyles}
         `;
         
         contactForm.insertBefore(messageEl, contactForm.firstChild);
         
-        // Auto-remove success messages
+        // Auto-remove success messages after 5 seconds
         if (type === 'success') {
             setTimeout(() => {
                 messageEl.style.opacity = '0';
-                messageEl.style.transition = 'opacity 0.3s ease';
+                messageEl.style.transform = 'translateY(-10px)';
+                messageEl.style.transition = 'all 0.3s ease';
                 setTimeout(() => messageEl.remove(), 300);
             }, 5000);
         }
@@ -248,7 +243,7 @@
         
         window.addEventListener('scroll', () => {
             let current = '';
-            const scrollPosition = window.pageYOffset + 100;
+            const scrollPosition = window.pageYOffset + 150;
             
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
@@ -259,8 +254,37 @@
                 }
             });
             
-            if (current) {
-                updateActiveLink(current);
+            // Update active link
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === current) {
+                    link.classList.add('active');
+                }
+            });
+        }, { passive: true });
+    }
+    
+    // === HERO PARALLAX EFFECT ===
+    function setupParallax() {
+        const heroBg = document.querySelector('.hero-bg');
+        if (!heroBg) return;
+        
+        let ticking = false;
+        
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const scrolled = window.pageYOffset;
+                    const parallaxSpeed = 0.3;
+                    
+                    if (scrolled < window.innerHeight) {
+                        heroBg.style.transform = `translateY(${scrolled * parallaxSpeed}px)`;
+                    }
+                    
+                    ticking = false;
+                });
+                
+                ticking = true;
             }
         }, { passive: true });
     }
@@ -269,29 +293,24 @@
     function setupLazyLoading() {
         if ('loading' in HTMLImageElement.prototype) {
             const images = document.querySelectorAll('img[loading="lazy"]');
-            images.forEach(img => {
-                img.addEventListener('load', () => {
-                    img.style.opacity = '1';
-                });
-                img.style.opacity = '0';
-                img.style.transition = 'opacity 0.3s ease';
-            });
-        }
-    }
-    
-    // === HERO PARALLAX EFFECT (subtle) ===
-    function setupParallax() {
-        const heroBg = document.querySelector('.hero-bg');
-        if (!heroBg) return;
-        
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const parallaxSpeed = 0.4;
             
-            if (scrolled < window.innerHeight) {
-                heroBg.style.transform = `translateY(${scrolled * parallaxSpeed}px)`;
-            }
-        }, { passive: true });
+            const imageObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '0';
+                        entry.target.style.transition = 'opacity 0.5s ease';
+                        
+                        entry.target.addEventListener('load', () => {
+                            entry.target.style.opacity = '1';
+                        });
+                        
+                        imageObserver.unobserve(entry.target);
+                    }
+                });
+            });
+            
+            images.forEach(img => imageObserver.observe(img));
+        }
     }
     
     // === INIT ADDITIONAL FEATURES ===
@@ -299,7 +318,7 @@
     setupLazyLoading();
     setupParallax();
     
-    // Run on page load
+    // === RUN ON PAGE LOAD ===
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

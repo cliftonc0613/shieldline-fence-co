@@ -6,12 +6,14 @@
     'use strict';
 
     // --- Mobile Navigation ---
-    const mobileToggle = document.getElementById('mobileToggle');
-    const navMenu = document.getElementById('navMenu');
+    const mobileToggle = document.getElementById('nav-toggle');
+    const navMenu = document.getElementById('nav-menu');
     const navLinks = document.querySelectorAll('.nav-link');
 
     if (mobileToggle && navMenu) {
         mobileToggle.addEventListener('click', () => {
+            const expanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+            mobileToggle.setAttribute('aria-expanded', !expanded);
             mobileToggle.classList.toggle('active');
             navMenu.classList.toggle('active');
             document.body.classList.toggle('menu-open');
@@ -19,6 +21,7 @@
 
         navLinks.forEach(link => {
             link.addEventListener('click', () => {
+                mobileToggle.setAttribute('aria-expanded', 'false');
                 mobileToggle.classList.remove('active');
                 navMenu.classList.remove('active');
                 document.body.classList.remove('menu-open');
@@ -127,7 +130,7 @@
     }
 
     // --- Footer Year ---
-    const yearEl = document.getElementById('currentYear');
+    const yearEl = document.getElementById('current-year');
     if (yearEl) {
         yearEl.textContent = new Date().getFullYear();
     }

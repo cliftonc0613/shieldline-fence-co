@@ -1288,6 +1288,7 @@ p {
     .footer-links {
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
+    }
     
     /* Show mobile CTA */
     .mobile-cta {

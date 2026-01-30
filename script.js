@@ -1,164 +1,71 @@
-// =============================================
-// Shieldline Fence Co. — Interactive Scripts
-// =============================================
-
-(function() {
+// Shieldline Fence Co. — Scripts
+(function () {
     'use strict';
 
-    // --- Mobile Navigation ---
-    const mobileToggle = document.getElementById('nav-toggle');
-    const navMenu = document.getElementById('nav-menu');
-    const navLinks = document.querySelectorAll('.nav-link');
+    // --- Sticky Nav ---
+    const nav = document.getElementById('nav');
+    const onScroll = () => nav && nav.classList.toggle('scrolled', scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
 
-    if (mobileToggle && navMenu) {
-        mobileToggle.addEventListener('click', () => {
-            const expanded = mobileToggle.getAttribute('aria-expanded') === 'true';
-            mobileToggle.setAttribute('aria-expanded', !expanded);
-            mobileToggle.classList.toggle('active');
-            navMenu.classList.toggle('active');
-            document.body.classList.toggle('menu-open');
+    // --- Mobile Toggle ---
+    const toggle = document.getElementById('nav-toggle');
+    const links = document.getElementById('nav-links');
+    if (toggle && links) {
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('open');
+            links.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', links.classList.contains('open'));
         });
-
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                mobileToggle.setAttribute('aria-expanded', 'false');
-                mobileToggle.classList.remove('active');
-                navMenu.classList.remove('active');
-                document.body.classList.remove('menu-open');
-            });
-        });
+        links.querySelectorAll('a').forEach(a =>
+            a.addEventListener('click', () => {
+                toggle.classList.remove('open');
+                links.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+            })
+        );
     }
-
-    // --- Sticky Navbar ---
-    const navbar = document.getElementById('navbar');
-    let lastScroll = 0;
-
-    function handleNavScroll() {
-        const currentScroll = window.scrollY;
-        if (navbar) {
-            navbar.classList.toggle('scrolled', currentScroll > 50);
-        }
-        lastScroll = currentScroll;
-    }
-
-    window.addEventListener('scroll', handleNavScroll, { passive: true });
-    handleNavScroll();
 
     // --- Smooth Scroll ---
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', function (e) {
+            const t = document.querySelector(this.getAttribute('href'));
+            if (t) {
                 e.preventDefault();
-                const navHeight = navbar ? navbar.offsetHeight : 0;
-                const targetPos = target.getBoundingClientRect().top + window.scrollY - navHeight;
-                window.scrollTo({ top: targetPos, behavior: 'smooth' });
+                const offset = nav ? nav.offsetHeight : 0;
+                window.scrollTo({ top: t.getBoundingClientRect().top + scrollY - offset, behavior: 'smooth' });
             }
         });
     });
 
-    // --- Scroll Reveal Animations ---
-    const revealElements = document.querySelectorAll(
-        '.section-header, .service-card, .about-content, .about-visual, ' +
-        '.testimonial-card, .process-step, .contact-info, .contact-form-wrapper, ' +
-        '.cta-content, .stat, .hero-badge, .hero-title, .hero-subtitle, ' +
-        '.hero-actions, .hero-stats, [class*="stagger"]'
-    );
-
-    const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                // Stagger delay based on sibling position
-                const siblings = entry.target.parentElement ? 
-                    Array.from(entry.target.parentElement.children) : [];
-                const siblingIndex = siblings.indexOf(entry.target);
-                const delay = Math.min(siblingIndex * 100, 400);
-
-                setTimeout(() => {
-                    entry.target.classList.add('revealed');
-                }, delay);
-                revealObserver.unobserve(entry.target);
-            }
-        });
-    }, {
-        threshold: 0.15,
-        rootMargin: '0px 0px -60px 0px'
-    });
-
-    revealElements.forEach(el => {
-        el.classList.add('reveal');
-        revealObserver.observe(el);
-    });
-
-    // --- Animated Counters ---
-    const statNumbers = document.querySelectorAll('.stat-number');
-    const counterObserver = new IntersectionObserver((entries) => {
+    // --- Scroll Reveal ---
+    const els = document.querySelectorAll('.srv-card, .rev-card, .cta-card, .about-visual, .about-text, .sec-head, .rev-fb');
+    const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                animateCounter(entry.target);
-                counterObserver.unobserve(entry.target);
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.5 });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    els.forEach((el, i) => {
+        el.classList.add('reveal');
+        el.style.transitionDelay = (i % 4) * 80 + 'ms';
+        observer.observe(el);
+    });
 
-    statNumbers.forEach(el => counterObserver.observe(el));
-
-    function animateCounter(el) {
-        const text = el.textContent.trim();
-        const match = text.match(/^(\d+)(.*)$/);
-        if (!match) return;
-
-        const target = parseInt(match[1], 10);
-        const suffix = match[2] || '';
-        const duration = 1500;
-        const start = performance.now();
-
-        function update(now) {
-            const elapsed = now - start;
-            const progress = Math.min(elapsed / duration, 1);
-            // Ease out cubic
-            const eased = 1 - Math.pow(1 - progress, 3);
-            const current = Math.round(target * eased);
-            el.textContent = current + suffix;
-
-            if (progress < 1) {
-                requestAnimationFrame(update);
-            }
-        }
-
-        requestAnimationFrame(update);
+    // --- Floating Mobile CTA ---
+    const mobCta = document.getElementById('mob-cta');
+    const hero = document.querySelector('.hero');
+    if (mobCta && hero) {
+        const ctaObs = new IntersectionObserver(([e]) => {
+            mobCta.classList.toggle('visible', !e.isIntersecting);
+        }, { threshold: 0 });
+        ctaObs.observe(hero);
     }
 
     // --- Footer Year ---
-    const yearEl = document.getElementById('current-year');
-    if (yearEl) {
-        yearEl.textContent = new Date().getFullYear();
-    }
-
-    // --- Parallax Hero (subtle) ---
-    const heroBg = document.querySelector('.hero-bg-image, .hero-bg');
-    if (heroBg && window.matchMedia('(min-width: 768px)').matches) {
-        window.addEventListener('scroll', () => {
-            const scrolled = window.scrollY;
-            if (scrolled < window.innerHeight) {
-                heroBg.style.transform = `translateY(${scrolled * 0.3}px)`;
-            }
-        }, { passive: true });
-    }
-
-    // --- Mobile CTA visibility ---
-    const mobileCta = document.querySelector('.mobile-cta');
-    if (mobileCta) {
-        const heroSection = document.querySelector('.hero');
-        const ctaObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                mobileCta.classList.toggle('visible', !entry.isIntersecting);
-            });
-        }, { threshold: 0 });
-
-        if (heroSection) {
-            ctaObserver.observe(heroSection);
-        }
-    }
+    const yr = document.getElementById('yr');
+    if (yr) yr.textContent = new Date().getFullYear();
 
 })();
